@@ -24,6 +24,12 @@ type MessageReceive struct {
 	Message string `json:"message"`
 }
 
+type MessageRedis struct {
+	To      string `json:"to"`
+	From    string `json:"from"`
+	Message string `json:"message"`
+}
+
 func (c *Client) readPump(h *Hub) {
 	defer func() {
 		h.unregister <- c

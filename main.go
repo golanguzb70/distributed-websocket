@@ -1,13 +1,16 @@
 package main
 
 import (
+	"distributed-websocket/redis"
 	websocketManagement "distributed-websocket/websocket-management"
 	"fmt"
 	"net/http"
 )
 
 func main() {
-	hub := websocketManagement.NewHub()
+	redisConn, _ := redis.New()
+
+	hub := websocketManagement.NewHub(redisConn)
 	go hub.Run()
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

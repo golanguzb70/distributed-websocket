@@ -1,6 +1,7 @@
 package websocketManagement
 
 import (
+	"distributed-websocket/redis"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -13,18 +14,24 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan MessageSent
+	redisMsg   chan []byte
+	redis      *redis.RedisConn
 }
 
-func NewHub() *Hub {
+func NewHub(redisConn *redis.RedisConn) *Hub {
 	return &Hub{
 		clients:    make(map[string]*Client),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan MessageSent, 1024),
+		redisMsg:   make(chan []byte, 1024),
+		redis:      redisConn,
 	}
 }
 
 func (h *Hub) Run() {
+	go h.redis.SubscribeAndWriteToChann(h.redisMsg)
+
 	for {
 		select {
 		case c := <-h.register:
@@ -49,7 +56,7 @@ func (h *Hub) Run() {
 
 			bt, err := json.MarshalIndent(msgRec, "", "\t")
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Error while marshaling", err)
 			}
 
 			for _, username := range msg.To {
@@ -62,8 +69,51 @@ func (h *Hub) Run() {
 						delete(h.clients, c.username)
 						close(c.send)
 					}
+				} else {
+					msgRedis := MessageRedis{
+						To:      username,
+						From:    msg.From,
+						Message: msg.Message,
+					}
+					bt, err := json.MarshalIndent(msgRedis, "", "\t")
+					if err != nil {
+						fmt.Println("Error while marshaling redis message", err)
+						continue
+					}
+					err = h.redis.Publish(bt)
+					if err != nil {
+						fmt.Println("Erorr while publishing message", err)
+					}
 				}
 			}
+		case msg := <-h.redisMsg:
+			msgObj := MessageRedis{}
+			err := json.Unmarshal(msg, &msgObj)
+			if err != nil {
+				fmt.Println("Couldn't unmarshal redis msg", err, string(msg))
+				continue
+			}
+			c, ok := h.clients[msgObj.To]
+			if ok {
+				msgRec := MessageReceive{
+					From:    msgObj.From,
+					Message: msgObj.Message,
+				}
+
+				bt, err := json.MarshalIndent(msgRec, "", "\t")
+				if err != nil {
+					fmt.Println("error while marshaling msg res", err)
+					continue
+				}
+				select {
+				case c.send <- bt:
+				default:
+					// slow client → drop
+					delete(h.clients, c.username)
+					close(c.send)
+				}
+			}
+
 		}
 	}
 }

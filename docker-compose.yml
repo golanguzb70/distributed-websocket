@@ -5,6 +5,18 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     restart: always
+    
+  backend1: 
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend1
+    restart: always
+
+  redis: 
+    image: redis:latest
+    container_name: redis
+    restart: always
 
   nginx:
     image: nginx:1.25-alpine
