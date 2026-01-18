@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minimal Chat</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+
+    .card {
+      width: 380px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.2);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      text-align: center;
+      font-size: 22px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: none;
+      height: 60px;
+    }
+
+    button {
+      background: #667eea;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #5a6fdc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .messages {
+      height: 200px;
+      overflow-y: auto;
+      background: #f7f7f7;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .msg {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .from {
+      font-weight: bold;
+      color: #667eea;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card" id="start-screen">
+  <h1>Start Chat</h1>
+  <input id="username" placeholder="Enter username" />
+  <button onclick="startChat()">Start</button>
+</div>
+
+<div class="card hidden" id="chat-screen">
+  <h1>Chat</h1>
+
+  <div class="messages" id="messages"></div>
+
+  <input id="to" placeholder="To (comma separated)" />
+  <textarea id="message" placeholder="Message"></textarea>
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+  let ws;
+  let username;
+
+  function startChat() {
+    username = document.getElementById("username").value.trim();
+    if (!username) return alert("Username required");
+
+   ws = new WebSocket(
+    `ws://localhost:8080/ws?username=${encodeURIComponent(username)}`
+    );
+
+    ws.onopen = () => {
+      document.getElementById("start-screen").classList.add("hidden");
+      document.getElementById("chat-screen").classList.remove("hidden");
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      addMessage(data.from, data.message);
+    };
+
+    ws.onclose = () => {
+      alert("Connection closed");
+      location.reload();
+    };
+  }
+
+  function sendMessage() {
+    const to = document.getElementById("to").value
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    const message = document.getElementById("message").value.trim();
+    if (!message || to.length === 0) return;
+
+    ws.send(JSON.stringify({
+        to,
+        message
+    }));
+
+    // ✅ Show sent message WITH recipients
+    addMessage(`You → ${to.join(", ")}`, message);
+
+    document.getElementById("message").value = "";
+    }
+  function addMessage(from, message) {
+    const div = document.createElement("div");
+    div.className = "msg";
+    div.innerHTML = `<span class="from">${from}:</span> ${message}`;
+    document.getElementById("messages").appendChild(div);
+  }
+</script>
+
+</body>
+</html>

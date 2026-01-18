@@ -11,8 +11,10 @@ services:
     container_name: nginx
     ports:
       - "8080:8080"
+      - "3030:3030"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/index.html:/usr/share/nginx/html/index.html
     depends_on:
       - backend
     restart: unless-stopped

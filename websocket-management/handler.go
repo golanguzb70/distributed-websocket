@@ -15,7 +15,7 @@ func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	username := r.Header.Get("username")
+	username := r.URL.Query().Get("username")
 
 	client := &Client{
 		conn:     conn,
