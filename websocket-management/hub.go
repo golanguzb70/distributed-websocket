@@ -1,6 +1,8 @@
 package websocketManagement
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -10,7 +12,7 @@ type Hub struct {
 	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan []byte
+	broadcast  chan MessageSent
 }
 
 func NewHub() *Hub {
@@ -18,7 +20,7 @@ func NewHub() *Hub {
 		clients:    make(map[string]*Client),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		broadcast:  make(chan []byte, 1024),
+		broadcast:  make(chan MessageSent, 1024),
 	}
 }
 
@@ -30,22 +32,36 @@ func (h *Hub) Run() {
 				h.closeClient(oldClient, "Connection closed because another session connection opened with this username")
 			}
 			h.clients[c.username] = c
-
+			fmt.Printf("New connection is established for user %s\n", c.username)
 		case c := <-h.unregister:
 			current, ok := h.clients[c.username]
 			if ok && current == c {
 				delete(h.clients, c.username)
 				h.closeClient(c, "disconnected")
+				fmt.Printf("Connection of user %s is closed\n", c.username)
 			}
 
 		case msg := <-h.broadcast:
-			for _, c := range h.clients {
-				select {
-				case c.send <- msg:
-				default:
-					// slow client → drop
-					delete(h.clients, c.username)
-					close(c.send)
+			msgRec := MessageReceive{
+				From:    msg.From,
+				Message: msg.Message,
+			}
+
+			bt, err := json.MarshalIndent(msgRec, "", "\t")
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			for _, username := range msg.To {
+				c, ok := h.clients[username]
+				if ok {
+					select {
+					case c.send <- bt:
+					default:
+						// slow client → drop
+						delete(h.clients, c.username)
+						close(c.send)
+					}
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package websocketManagement
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/gorilla/websocket"
@@ -12,6 +13,17 @@ type Client struct {
 	send     chan []byte
 }
 
+type MessageSent struct {
+	To      []string `json:"to"`
+	From    string   `json:"from"`
+	Message string   `json:"message"`
+}
+
+type MessageReceive struct {
+	From    string `json:"from"`
+	Message string `json:"message"`
+}
+
 func (c *Client) readPump(h *Hub) {
 	defer func() {
 		h.unregister <- c
@@ -20,9 +32,13 @@ func (c *Client) readPump(h *Hub) {
 	for {
 		_, msg, err := c.conn.ReadMessage()
 		if err != nil {
+			fmt.Println(err)
 			break
 		}
-		h.broadcast <- msg
+		msgObj := MessageSent{}
+		err = json.Unmarshal(msg, &msgObj)
+		msgObj.From = c.username
+		h.broadcast <- msgObj
 	}
 }
 
