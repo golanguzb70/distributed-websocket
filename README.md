@@ -17,6 +17,7 @@ Table of Contents
 ⸻
 
 Features
+
 	•	Two WebSocket servers: Handles real-time communication.
 	•	Redis instance: Used as a shared store or message broker.
 	•	Nginx reverse proxy: Serves both frontend and backend on separate ports. Load balances backend servers.
@@ -60,6 +61,7 @@ Architecture
 Prerequisites
 
 Before running this project, make sure you have the following installed:
+
 	•	Docker￼ (v20+ recommended)
 	•	Docker Compose￼ (v2+ recommended)
 
@@ -76,6 +78,7 @@ cd <repository-directory>
 docker compose up --build
 
 This command will start:
+
 	•	Two WebSocket servers
 	•	Redis instance
 	•	Nginx reverse proxy
@@ -83,10 +86,12 @@ This command will start:
 ⸻
 
 Usage
+
 	•	Access Web UI: http://localhost:3030￼
 	•	Access Backend Ws API: http://localhost:8080/ws￼
 
 Interacting with WebSockets
+
 	1.	The UI connects to the WebSocket servers automatically.
 	2.	Backend services are exposed via Nginx on port 8080.
 	3.	Redis is used for messaging between WebSocket servers if needed.
@@ -105,6 +110,7 @@ nginx	3030, 8080	Reverse proxy for UI and backend
 ⸻
 
 Configuration
+
 	•	Nginx: Configured to forward requests to:
 	•	/ → Web UI (3030)
 	•	/ws → Backend (8080)
@@ -114,6 +120,7 @@ Configuration
 ⸻
 
 Troubleshooting
+
 	•	Docker Compose fails to start
 	•	Make sure Docker and Docker Compose are installed.
 	•	Ensure no other services are using ports 3030 or 8080.
