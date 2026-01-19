@@ -2,7 +2,8 @@ Distributed WebSocket Application with UI and Backend
 
 This project provides a full-stack WebSocket-based application with two WebSocket servers, a Redis instance, and an Nginx reverse proxy. It includes a web-based UI and backend services, all containerized using Docker Compose.
 
-Table of Contents
+Table of Contents 
+
 	•	Features￼
 	•	Architecture￼
 	•	Prerequisites￼
